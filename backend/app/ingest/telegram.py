@@ -134,6 +134,45 @@ async def backfill(client: TelegramClient, *, limit: int | None = None) -> Inges
     return stats
 
 
+async def poll(client: TelegramClient) -> IngestStats:
+    """Fetch and ingest whatever has arrived since the last run, then return.
+
+    For hosts that can't keep a socket open all day (a scheduled CI job rather
+    than an always-on worker), this replaces watch()'s live event stream: it
+    is meant to be called on a timer, e.g. every 15 minutes, not held open.
+    """
+    chat_id = settings.telegram_chat
+    entity = await client.get_entity(chat_id)
+    stats = IngestStats()
+
+    db = SessionLocal()
+    try:
+        cursor = get_cursor(db, chat_id)
+        since_id = cursor.last_message_id
+        highest_seen = since_id
+
+        kwargs: dict = {"min_id": since_id, "reverse": True}
+        if settings.telegram_topic_id:
+            kwargs["reply_to"] = settings.telegram_topic_id
+
+        async for message in client.iter_messages(entity, **kwargs):
+            if not (message.message or "").strip():
+                continue
+            if not _in_watched_topic(message):
+                continue
+
+            ingest_message(db, stats=stats, **await _message_fields(message, chat_id))
+            highest_seen = max(highest_seen, message.id)
+
+        update_cursor(db, cursor, stats=stats, last_message_id=highest_seen)
+        db.commit()
+    finally:
+        db.close()
+
+    log.info("Poll finished: %s", stats)
+    return stats
+
+
 async def watch(client: TelegramClient) -> None:
     """Stay connected and ingest new posts as they arrive."""
     chat_id = settings.telegram_chat
@@ -198,6 +237,35 @@ async def run_forever() -> None:
     await watch(client)
 
 
+async def run_once() -> None:
+    """Backfill once if needed, otherwise poll for what's new, then exit.
+
+    This is the entry point for a scheduled job (cron, GitHub Actions) rather
+    than a long-lived process — see poll() for why.
+    """
+    client = build_client()
+    await client.start()
+
+    if not await client.is_user_authorized():
+        raise SystemExit("Not signed in. Run: python -m scripts.login")
+
+    db = SessionLocal()
+    try:
+        cursor = get_cursor(db, settings.telegram_chat)
+        needs_backfill = not cursor.backfill_complete
+        db.commit()
+    finally:
+        db.close()
+
+    if needs_backfill:
+        log.info("First run — backfilling history. This takes a few minutes.")
+        await backfill(client)
+    else:
+        await poll(client)
+
+    await client.disconnect()
+
+
 def main() -> None:
     logging.basicConfig(
         level=logging.INFO,
@@ -209,3 +277,13 @@ def main() -> None:
         asyncio.run(run_forever())
     except KeyboardInterrupt:
         log.info("Stopped.")
+
+
+def main_once() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s  %(levelname)-7s %(name)s  %(message)s",
+        datefmt="%H:%M:%S",
+    )
+    logging.getLogger("telethon").setLevel(logging.WARNING)
+    asyncio.run(run_once())

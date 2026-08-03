@@ -16,10 +16,20 @@ settings = get_settings()
 
 _is_sqlite = settings.database_url.startswith("sqlite")
 
+if _is_sqlite:
+    # SQLite needs this to be usable from FastAPI's threadpool.
+    _connect_args = {"check_same_thread": False}
+else:
+    # A transaction-mode pgbouncer (e.g. Supabase's pooler) rotates the
+    # underlying server connection between statements, so psycopg's
+    # server-side prepared statement cache goes stale and Postgres rejects
+    # the reused name. Disabling it costs a small amount of Postgres-side
+    # query planning reuse, not correctness.
+    _connect_args = {"prepare_threshold": None}
+
 engine = create_engine(
     settings.database_url,
-    # SQLite needs this to be usable from FastAPI's threadpool.
-    connect_args={"check_same_thread": False} if _is_sqlite else {},
+    connect_args=_connect_args,
     # Recycle before typical managed-Postgres idle timeouts kill the socket.
     pool_pre_ping=not _is_sqlite,
     echo=False,

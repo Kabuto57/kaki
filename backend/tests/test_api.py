@@ -67,8 +67,14 @@ def post(db, text: str, *, message_id: int, posted_at: datetime | None = None) -
 
 
 def in_days(days: int) -> str:
-    """A date string the parser will read, N days from now."""
-    return (datetime.now(timezone.utc) + timedelta(days=days)).strftime("%d %b")
+    """A date string the parser will read, N calendar days from today, SGT.
+
+    Pure date arithmetic rather than clock arithmetic — UTC and SGT are 8
+    hours apart with no DST, so near midnight SGT the two clocks disagree on
+    what "today" even is, and a test built on UTC-now-plus-timedelta can pick
+    the wrong calendar day right when a test run happens to straddle that gap.
+    """
+    return (datetime.now(SGT).date() + timedelta(days=days)).strftime("%d %b")
 
 
 class TestIngestion:
