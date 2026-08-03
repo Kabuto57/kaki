@@ -1,0 +1,27 @@
+# Secrets and credentials — never commit these
+.env
+*.session
+*.session-journal
+
+# Data
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+.vercel/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/

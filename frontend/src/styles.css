@@ -1,0 +1,653 @@
+/*
+  Kaki's visual language comes from the places the games happen: ActiveSG sports
+  halls. The blue is the colour of the court floor, the off-white is the line
+  paint, and the tan is shuttlecock cork. That is the whole palette, and it
+  keeps the app looking like the thing it is about rather than like a generic
+  listings site.
+
+  The type does the heavy lifting. Times and prices are set in mono because they
+  are data you scan rather than prose you read, and the start time is the single
+  biggest thing on every card — it is the fact people actually decide on.
+*/
+
+:root {
+  --paper: #f7f6f2;
+  --card: #ffffff;
+  --ink: #14161a;
+  --ink-soft: #5c6470;
+  --line: #e4e1d8;
+
+  --court: #1b4fd8; /* ActiveSG court floor blue */
+  --court-dark: #1740af;
+  --signal: #00874d; /* spots still open */
+  --cork: #e8a54b; /* shuttlecock cork */
+  --alert: #c4372f;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+
+  --shadow: 0 1px 2px rgba(20, 22, 26, 0.06), 0 4px 16px rgba(20, 22, 26, 0.05);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter Tight', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+:where(a) {
+  color: var(--court);
+}
+
+:where(button, a, input, select):focus-visible {
+  outline: 2px solid var(--court);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px 96px;
+}
+
+/* ---------------------------------------------------------------- masthead */
+
+.masthead {
+  padding: 22px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wordmark {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 27px;
+  letter-spacing: -0.03em;
+  margin: 0;
+  line-height: 1;
+}
+
+.wordmark span {
+  color: var(--court);
+}
+
+.tagline {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin: 4px 0 0;
+}
+
+.live-count {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--signal);
+  background: rgba(0, 135, 77, 0.09);
+  border-radius: 999px;
+  padding: 5px 11px;
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------------- filters */
+
+.filters {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--paper);
+  padding: 10px 0 12px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 18px;
+}
+
+.chip-row {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.chip-row + .chip-row {
+  margin-top: 6px;
+}
+
+.chip-row::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.chip:hover {
+  border-color: var(--ink-soft);
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--court);
+  border-color: var(--court);
+  color: #fff;
+  font-weight: 600;
+}
+
+.filter-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 11px;
+}
+
+.field {
+  flex: 1 1 148px;
+  min-width: 0;
+}
+
+.field label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 5px;
+}
+
+.field select,
+.field input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- calendar */
+
+.calendar {
+  margin-top: 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 8px 12px;
+  user-select: none;
+}
+
+.calendar-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.calendar-chevron {
+  color: var(--ink-soft);
+  transition: transform 0.15s;
+}
+
+.calendar-chevron[data-open] {
+  transform: rotate(180deg);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0;
+}
+
+.calendar-month {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.calendar-nav {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 999px;
+  width: 26px;
+  height: 26px;
+  line-height: 1;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.calendar-nav:hover {
+  border-color: var(--ink-soft);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  padding-bottom: 4px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0;
+}
+
+.calendar-day.out {
+  cursor: default;
+}
+
+.calendar-day:disabled {
+  color: var(--line);
+  cursor: default;
+}
+
+.calendar-day:not(:disabled):not(.out):hover {
+  border-color: var(--line);
+}
+
+.calendar-day[data-today] {
+  border-color: var(--cork);
+}
+
+.calendar-day[data-preview] {
+  background: rgba(27, 79, 216, 0.14);
+}
+
+.calendar-day[aria-pressed='true'] {
+  background: var(--court);
+  border-color: var(--court);
+  color: #fff;
+}
+
+.calendar-day-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.calendar-day-count {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--signal);
+}
+
+.calendar-day[aria-pressed='true'] .calendar-day-count {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.reset {
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 8px 2px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.reset:hover {
+  color: var(--ink);
+}
+
+/* -------------------------------------------------------------- game cards */
+
+.game-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.game {
+  display: flex;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.game:hover {
+  border-color: var(--ink-soft);
+}
+
+/*
+  The left rail is the signature. Day and time in mono at a size nothing else
+  competes with, because "when" is the fact that decides whether the rest of the
+  card is worth reading at all.
+*/
+.when {
+  flex: 0 0 84px;
+  padding: 14px 10px;
+  border-right: 1px dashed var(--line);
+  text-align: center;
+  background: linear-gradient(180deg, rgba(27, 79, 216, 0.04), transparent);
+}
+
+.when .day {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--court);
+}
+
+/* Each day gets its own color so a run of cards reads as a week at a glance,
+   not a wall of identical labels. Hues are spaced ~40° apart around the
+   wheel, clear of Today's green and Tmr's orange, at high enough saturation
+   to stay distinct even skimmed quickly. */
+.when .day[data-day='today'] {
+  color: var(--signal);
+}
+.when .day[data-day='tmr'] {
+  color: hsl(30, 90%, 42%);
+}
+.when .day[data-day='mon'] {
+  color: hsl(215, 85%, 48%);
+}
+.when .day[data-day='tue'] {
+  color: hsl(255, 80%, 55%);
+}
+.when .day[data-day='wed'] {
+  color: hsl(285, 75%, 48%);
+}
+.when .day[data-day='thu'] {
+  color: hsl(330, 80%, 45%);
+}
+.when .day[data-day='fri'] {
+  color: hsl(355, 80%, 48%);
+}
+.when .day[data-day='sat'] {
+  color: hsl(195, 85%, 38%);
+}
+.when .day[data-day='sun'] {
+  color: hsl(95, 60%, 35%);
+}
+
+.when .time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin-top: 3px;
+  line-height: 1.1;
+}
+
+.when .until {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  margin-top: 3px;
+}
+
+.game-body {
+  flex: 1;
+  min-width: 0;
+  padding: 13px 15px;
+}
+
+.venue {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.015em;
+  margin: 0 0 5px;
+  line-height: 1.25;
+}
+
+.venue.unknown {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.facts .sep {
+  opacity: 0.4;
+}
+
+.facts .spots {
+  color: var(--signal);
+  font-weight: 700;
+}
+
+.facts .price {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.badge {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+
+.badge.tonight {
+  background: var(--cork);
+  color: #3a2408;
+}
+
+.badge.filled {
+  background: rgba(196, 55, 47, 0.1);
+  color: var(--alert);
+}
+
+.badge.skill {
+  background: rgba(27, 79, 216, 0.08);
+  color: var(--court);
+}
+
+/*
+  Shown only when the parser was not fully confident. Rather than hiding the
+  doubt behind a tidy card, we show what the post actually said and let the
+  reader judge. Being visibly unsure beats being confidently wrong.
+*/
+.raw-strip {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--paper);
+  border-left: 2px solid var(--cork);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 5.4em;
+  overflow: hidden;
+}
+
+.raw-strip.expanded {
+  max-height: none;
+  border-left-color: var(--court);
+}
+
+.raw-label {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cork);
+  margin-bottom: 3px;
+}
+
+.raw-strip.expanded .raw-label {
+  color: var(--court);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 11px;
+}
+
+.open-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--court);
+  color: #fff;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 13px;
+  border-radius: 999px;
+  transition: background 0.12s;
+}
+
+.open-link:hover {
+  background: var(--court-dark);
+}
+
+.posted-by {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+/* ------------------------------------------------------------ empty/errors */
+
+.notice {
+  text-align: center;
+  padding: 52px 24px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.notice h2 {
+  font-family: 'Archivo', sans-serif;
+  font-size: 17px;
+  margin: 0 0 7px;
+}
+
+.notice p {
+  margin: 0 auto;
+  max-width: 42ch;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.notice.error {
+  border-color: rgba(196, 55, 47, 0.35);
+  border-style: solid;
+}
+
+.skeleton {
+  height: 96px;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, #eeece5 25%, #f5f3ee 50%, #eeece5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.3s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.footnote {
+  margin-top: 26px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 480px) {
+  .wordmark {
+    font-size: 23px;
+  }
+  .when {
+    flex-basis: 72px;
+  }
+  .when .time {
+    font-size: 17px;
+  }
+  .when .day {
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
