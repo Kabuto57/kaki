@@ -3,10 +3,10 @@
 # (see .github/workflows/ingest.yml) against backend/requirements.txt, so the
 # serverless bundle does not need to carry a Telegram client it never imports.
 fastapi==0.115.0
-sqlalchemy==2.0.35
-pydantic[email]==2.9.2
+sqlalchemy==2.0.54
+pydantic[email]==2.12.5
 pydantic-settings==2.5.2
 python-jose[cryptography]==3.3.0
 bcrypt==4.2.0
 python-multipart==0.0.9
-psycopg[binary]==3.2.10
+psycopg[binary]==3.2.13
